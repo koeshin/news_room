@@ -10,3 +10,4 @@ env/
 scraps.json
 debug_*.png
 debug_*.webp
+debug_*.py

@@ -3,6 +3,8 @@ import asyncio
 from datetime import datetime, timedelta
 import scraper
 import storage
+import analysis
+import time
 
 # 페이지 설정
 st.set_page_config(page_title="나의 뉴스룸", layout="wide")
@@ -14,11 +16,23 @@ menu = st.sidebar.selectbox("메뉴 선택", ["뉴스룸", "스크랩 북", "환
 if "news_data" not in st.session_state:
     st.session_state.news_data = {}
 
+# 스크랩 상태 캐싱 (UI 반응 속도 향상용)
+if "scrapped_urls" not in st.session_state:
+    st.session_state.scrapped_urls = set()
+    # 초기 로드 시 한 번 채워넣기
+    all_scraps = storage.load_scraps()
+    for date_key in all_scraps:
+        for s in all_scraps[date_key]:
+            st.session_state.scrapped_urls.add(s['url'])
+
 def get_yesterday():
     return datetime.now() - timedelta(days=1)
 
 def format_date_display(date_obj):
     return date_obj.strftime("%Y-%m-%d")
+
+def format_date_param(date_obj):
+    return date_obj.strftime("%Y%m%d")
 
 # 1. 뉴스룸 화면
 if menu == "뉴스룸":
@@ -43,25 +57,42 @@ if menu == "뉴스룸":
         
     current_date_check = f"{date_str}"
     
+    async def prefetch_all(target_date, force_refresh=False):
+        """모든 언론사의 데이터를 병렬로 가져옵니다."""
+        settings = storage.load_settings()
+        tasks = []
+        
+        # 캐시 우선 모드일 때 메시지
+        if not force_refresh:
+            placeholder = st.empty()
+            placeholder.toast("🚀 뉴스 데이터를 불러오는 중... (캐시 확인)", icon="⚡")
+        else:
+            st.toast("🔄 최신 데이터로 새로고침 중...", icon="📡")
+
+        for media in settings['media_list']:
+            # Check if data is already in cache for this specific date and media
+            cache_key = f"{media['oid']}_{target_date}"
+            if not force_refresh and cache_key in st.session_state.news_data:
+                # If not force refreshing and data is in cache, use dummy task
+                tasks.append(asyncio.sleep(0, result=st.session_state.news_data[cache_key]))
+            else:
+                # Otherwise, fetch data
+                tasks.append(scraper.get_newspaper_data(media['oid'], target_date, force_refresh=force_refresh))
+        
+        results = await asyncio.gather(*tasks)
+        
+        for media, data in zip(settings['media_list'], results):
+            key = f"{media['oid']}_{target_date}" # Use the full key for caching
+            if data: # 데이터가 없으면(오류/휴간) 저장하지 않음/덮어쓰지 않음
+                 st.session_state.news_data[key] = data
+            elif key not in st.session_state.news_data: # If no data and not in cache, store empty list
+                 st.session_state.news_data[key] = []
+
     # 아직 이 날짜에 대한 프리패칭을 시도하지 않았다면 시작
     if st.session_state.prefetched_date != current_date_check:
         with st.spinner(f"{format_date_display(selected_date)} 뉴스 전체 그물을 던지는 중... (전체 언론사 동시 로딩)"):
-            async def prefetch_all():
-                tasks = []
-                for m in media_list:
-                    check_key = f"{m['oid']}_{date_str}"
-                    if check_key not in st.session_state.news_data:
-                        tasks.append(scraper.get_newspaper_data(m['oid'], date_str))
-                    else:
-                        tasks.append(asyncio.sleep(0, result=st.session_state.news_data[check_key])) # Dummy
-                
-                results = await asyncio.gather(*tasks)
-                
-                for m, res in zip(media_list, results):
-                    key = f"{m['oid']}_{date_str}"
-                    st.session_state.news_data[key] = res
             
-            asyncio.run(prefetch_all())
+            asyncio.run(prefetch_all(current_date_check))
             st.session_state.prefetched_date = current_date_check
             # st.success("모든 신문 배달 완료!") # 너무 깜빡거릴 수 있으므로 생략 혹은 Toast
             
@@ -72,7 +103,7 @@ if menu == "뉴스룸":
     if st.button("뉴스 새로고침"):
         # 강제 새로고침
         with st.spinner(f"{selected_media} 뉴스를 다시 가져옵니다..."):
-             data = asyncio.run(scraper.get_newspaper_data(oid, date_str))
+             data = asyncio.run(scraper.get_newspaper_data(oid, date_str, force_refresh=True))
              st.session_state.news_data[cache_key] = data
              st.rerun()
 
@@ -119,12 +150,21 @@ if menu == "뉴스룸":
                                     st.markdown(f"<a href='{art['url']}' target='_blank' style='text-decoration:none; color:gray; font-size:0.8em;'>기사 원문 ></a>", unsafe_allow_html=True)
 
                                 with col_b:
-                                    if st.button("scrap", key=f"scr_{cache_key}_{page['page']}_{idx}", help="스크랩 저장"):
-                                        success = storage.add_scrap(format_date_display(selected_date), selected_media, art)
-                                        if success:
+                                    # 스크랩 버튼 (Toggle)
+                                    is_scrapped = art['url'] in st.session_state.scrapped_urls
+                                    btn_label = "★" if is_scrapped else "☆"
+                                    btn_help = "스크랩 해제" if is_scrapped else "스크랩"
+                                    
+                                    if st.button(btn_label, key=f"scr_{cache_key}_{page['page']}_{idx}", help=btn_help):
+                                        # Toggle Action
+                                        added = storage.toggle_scrap(format_date_display(selected_date), selected_media, art)
+                                        if added:
+                                            st.session_state.scrapped_urls.add(art['url'])
                                             st.toast("저장완료!", icon="✅")
                                         else:
-                                            st.toast("이미 저장됨", icon="ℹ️")
+                                            st.session_state.scrapped_urls.discard(art['url'])
+                                            st.toast("삭제됨!", icon="🗑️")
+                                        st.rerun()
                                 st.divider()
 
 # 2. 스크랩 북 화면
@@ -139,20 +179,50 @@ elif menu == "스크랩 북":
         # 날짜별 역순 정렬
         sorted_dates = sorted(scraps.keys(), reverse=True)
         
+
+        # 주간 리포트 버튼 (사이드바 혹은 상단)
+        with st.expander("📊 AI 주간 리포트 (Beta)", expanded=False):
+            st.info("지난 월요일부터 오늘(또는 어제)까지의 스크랩을 모아 AI가 분석해줍니다.")
+            if st.button("이번 주 리포트 생성하기"):
+                with st.spinner("Gemini가 기사를 읽고 분석 중입니다... (약 10~20초 소요)"):
+                    weekly_scraps = storage.get_weekly_scraps()
+                    report = analysis.generate_weekly_report(weekly_scraps)
+                    st.markdown(report)
+
+        st.divider()
+
         for date_str in sorted_dates:
             st.header(f"📅 {date_str}")
             for idx, item in enumerate(scraps[date_str]):
-                with st.container(border=True):
-                    col_x, col_y = st.columns([0.9, 0.1])
-                    with col_x:
-                        st.subheader(f"[{item['media']}] {item['title']}")
+                # 읽음 상태에 따른 스타일
+                is_read = item.get('read', False)
+                container_border = True
+                
+                with st.container(border=container_border):
+                    col_check, col_content, col_del = st.columns([0.05, 0.85, 0.1])
+                    
+                    with col_check:
+                         # 읽음 체크박스
+                         new_read_status = st.checkbox("", value=is_read, key=f"read_{date_str}_{idx}")
+                         if new_read_status != is_read:
+                             storage.mark_as_read(date_str, item['url'], new_read_status)
+                             st.rerun()
+
+                    with col_content:
+                        title_prefix = "✅ " if is_read else ""
+                        title_style = "color: gray; text-decoration: line-through;" if is_read else ""
+                        
+                        st.markdown(f"<h3 style='margin:0; padding:0; font-size:1.2em; {title_style}'>[{item['media']}] {item['title']}</h3>", unsafe_allow_html=True)
+                        
                         if item['subtitle']:
                             st.write(item['subtitle'])
                         st.markdown(f"[기사 읽기]({item['url']})")
                         st.caption(f"스크랩 시간: {item['scrapped_at']}")
-                    with col_y:
-                        if st.button("삭제", key=f"del_{date_str}_{idx}"):
+                        
+                    with col_del:
+                        if st.button("🗑️", key=f"del_{date_str}_{idx}", help="삭제"):
                             storage.remove_scrap(date_str, item['url'])
+                            st.session_state.scrapped_urls.discard(item['url']) # 캐시 동기화
                             st.rerun()
 
 # 3. 환경 설정 화면

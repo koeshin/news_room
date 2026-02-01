@@ -2,6 +2,7 @@ import asyncio
 from playwright.async_api import async_playwright
 from bs4 import BeautifulSoup
 import re
+import storage # 캐싱 모듈 임포트
 
 # 동시 실행 제한을 위한 세마포어 (한 번에 5개의 탭만 열기)
 SEM_LIMIT = 5
@@ -58,8 +59,17 @@ async def fetch_article_subtitle(context, url, sem):
         except Exception:
             return ""
 
-async def get_newspaper_data(oid, date):
+async def get_newspaper_data(oid, date, force_refresh=False):
     """특정 언론사와 날짜의 신문 데이터를 가져옵니다."""
+    
+    # 1. 캐시 확인
+    if not force_refresh:
+        cached_data = storage.load_news_cache(date, oid)
+        if cached_data:
+            print(f"[{oid}] Cache Hit! Skipping scrape.")
+            return cached_data
+
+    print(f"[{oid}] Scraping started...")
     url = f"https://media.naver.com/press/{oid}/newspaper?date={date}"
     
     async with async_playwright() as p:
@@ -144,6 +154,11 @@ async def get_newspaper_data(oid, date):
             info["subtitle"] = subtitle
             
         await browser.close()
+        
+        # 2. 캐시 저장
+        if newspaper_data:
+            storage.save_news_cache(date, oid, newspaper_data)
+            
         return newspaper_data
 
 if __name__ == "__main__":
