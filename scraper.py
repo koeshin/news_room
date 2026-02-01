@@ -4,22 +4,22 @@ from bs4 import BeautifulSoup
 import re
 import storage # 캐싱 모듈 임포트
 
-# 동시 실행 제한을 위한 세마포어 (한 번에 5개의 탭만 열기)
-SEM_LIMIT = 5
+# 동시 실행 제한을 위한 세마포어 (한 번에 10개의 탭만 열기 - 속도 최적화)
+SEM_LIMIT = 10
 
 async def fetch_article_subtitle(context, url, sem):
     """기사 상세 페이지에서 부제목을 가져옵니다. (Semaphore 적용)"""
     async with sem:
         try:
             page = await context.new_page()
-            # 리소스 최적화
-            await page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "media", "font", "stylesheet"] else route.continue_())
+            # 리소스 최적화 (스크립트 추가 차단)
+            await page.route("**/*", lambda route: route.abort() if route.request.resource_type in ["image", "media", "font", "stylesheet", "script"] else route.continue_())
             
             # 타임아웃 3초로 복구 (세마포어로 부하가 줄었으므로)
             await page.goto(url, wait_until="domcontentloaded", timeout=3000)
             
             try:
-               await page.wait_for_selector('div.media_end_head_subheadline, strong.media_end_summary', timeout=1500)
+               await page.wait_for_selector('div.media_end_head_subheadline, strong.media_end_summary', timeout=500)
             except:
                pass
     

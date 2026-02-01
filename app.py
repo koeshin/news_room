@@ -50,61 +50,33 @@ if menu == "뉴스룸":
     
     date_str = selected_date.strftime("%Y%m%d")
     
-    # --- Parallel Prefetching Logic ---
-    # 앱 시작 시(혹은 날짜 변경 시) 모든 언론사의 데이터를 미리 가져옴
-    if "prefetched_date" not in st.session_state:
-        st.session_state.prefetched_date = None
-        
-    current_date_check = f"{date_str}"
-    
-    async def prefetch_all(target_date, force_refresh=False):
-        """모든 언론사의 데이터를 병렬로 가져옵니다."""
-        settings = storage.load_settings()
-        tasks = []
-        
-        # 캐시 우선 모드일 때 메시지
-        if not force_refresh:
-            placeholder = st.empty()
-            placeholder.toast("🚀 뉴스 데이터를 불러오는 중... (캐시 확인)", icon="⚡")
-        else:
-            st.toast("🔄 최신 데이터로 새로고침 중...", icon="📡")
-
-        for media in settings['media_list']:
-            # Check if data is already in cache for this specific date and media
-            cache_key = f"{media['oid']}_{target_date}"
-            if not force_refresh and cache_key in st.session_state.news_data:
-                # If not force refreshing and data is in cache, use dummy task
-                tasks.append(asyncio.sleep(0, result=st.session_state.news_data[cache_key]))
-            else:
-                # Otherwise, fetch data
-                tasks.append(scraper.get_newspaper_data(media['oid'], target_date, force_refresh=force_refresh))
-        
-        results = await asyncio.gather(*tasks)
-        
-        for media, data in zip(settings['media_list'], results):
-            key = f"{media['oid']}_{target_date}" # Use the full key for caching
-            if data: # 데이터가 없으면(오류/휴간) 저장하지 않음/덮어쓰지 않음
-                 st.session_state.news_data[key] = data
-            elif key not in st.session_state.news_data: # If no data and not in cache, store empty list
-                 st.session_state.news_data[key] = []
-
-    # 아직 이 날짜에 대한 프리패칭을 시도하지 않았다면 시작
-    if st.session_state.prefetched_date != current_date_check:
-        with st.spinner(f"{format_date_display(selected_date)} 뉴스 전체 그물을 던지는 중... (전체 언론사 동시 로딩)"):
-            
-            asyncio.run(prefetch_all(current_date_check))
-            st.session_state.prefetched_date = current_date_check
-            # st.success("모든 신문 배달 완료!") # 너무 깜빡거릴 수 있으므로 생략 혹은 Toast
-            
-    # 선택된 언론사 데이터 표시
+    # --- Lazy Loading Logic (선택된 언론사만 로드) ---
+    # 선택된 언론사 OID 가져오기
     oid = next(m['oid'] for m in media_list if m['name'] == selected_media)
     cache_key = f"{oid}_{date_str}"
     
-    if st.button("뉴스 새로고침"):
-        # 강제 새로고침
+    # 1단계: 세션 상태 확인 (가장 빠름)
+    if cache_key not in st.session_state.news_data:
+        # 2단계: 로컬 파일 캐시 확인 (네트워크 요청 없음)
+        cached_data = storage.load_news_cache(date_str, oid)
+        if cached_data:
+            st.session_state.news_data[cache_key] = cached_data
+            st.toast(f"⚡ {selected_media} 캐시에서 로드 완료!", icon="💾")
+        else:
+            # 3단계: 네트워크에서 가져오기 (가장 느림)
+            with st.spinner(f"{selected_media} 뉴스를 가져오는 중... (최초 1회만 발생)"):
+                data = asyncio.run(scraper.get_newspaper_data(oid, date_str))
+                if data:
+                    st.session_state.news_data[cache_key] = data
+                else:
+                    st.session_state.news_data[cache_key] = [] # 데이터 없음 표시
+    
+            
+    # 새로고침 버튼 (강제 새로고침)
+    if st.button("🔄 뉴스 새로고침", help="캐시를 무시하고 최신 데이터를 가져옵니다."):
         with st.spinner(f"{selected_media} 뉴스를 다시 가져옵니다..."):
              data = asyncio.run(scraper.get_newspaper_data(oid, date_str, force_refresh=True))
-             st.session_state.news_data[cache_key] = data
+             st.session_state.news_data[cache_key] = data if data else []
              st.rerun()
 
     display_data = st.session_state.news_data.get(cache_key)

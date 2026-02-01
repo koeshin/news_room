@@ -24,6 +24,14 @@ We have significantly enhanced the News Room app with AI analysis, persistent ca
 - **Read Status**: Checkbox in Scrapbook to mark articles as read (strikethrough visual).
 - **Natural Sorting**: Pages are now sorted naturally (A1, A2, ... A10).
 
+### 4. 🚀 Performance Overhaul
+- **Lazy Loading**: Instead of prefetching all media on startup, the app now only loads the specific media selected by the user.
+- **Direct Cache Access**: The app checks the local JSON cache directly before initiating any heavy async processes.
+- **Scraper Tuning**:
+    - **Concurrency**: Increased parallel page processing from 5 to 10.
+    - **Speed**: Reduced internal wait times to 500ms for faster element detection.
+    - **Efficiency**: Added ad/tracking script blocking to further speed up page rendering.
+
 ## Files Modified
 - `app.py`: UI logic key features.
 - `scraper.py`: Caching integration.
