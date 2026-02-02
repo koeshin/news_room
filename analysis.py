@@ -53,3 +53,39 @@ def generate_weekly_report(scraps):
         return response.text
     except Exception as e:
         return f"⚠️ 리포트 생성 중 오류가 발생했습니다: {str(e)}"
+
+def generate_one_line_summary(title, subtitle=""):
+    """
+    기사 제목과 부제목을 바탕으로 1줄 요약을 생성합니다. (Feature 2)
+    """
+    if not configure_genai():
+        return ""
+    
+    try:
+        # Gemini Flash 사용 (빠르고 저렴함)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        
+        prompt = f"""
+다음 뉴스 기사를 한 줄(최대 30자)로 요약해 주세요. 결과만 출력하세요.
+
+제목: {title}
+부제목: {subtitle if subtitle else '(없음)'}
+"""
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception:
+        return ""
+
+async def generate_summaries_batch(articles):
+    """
+    여러 기사의 요약을 병렬로 생성합니다.
+    """
+    if not configure_genai():
+        return {}
+    
+    summaries = {}
+    for art in articles:
+        summary = generate_one_line_summary(art.get('title', ''), art.get('subtitle', ''))
+        summaries[art['url']] = summary
+    
+    return summaries

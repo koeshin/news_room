@@ -4,6 +4,7 @@ from datetime import datetime
 
 SCRAPS_FILE = "scraps.json"
 SETTINGS_FILE = "settings.json"
+FOLDERS_FILE = "folders.json"
 CACHE_DIR = "scraped_data"
 
 if not os.path.exists(CACHE_DIR):
@@ -40,11 +41,35 @@ def save_settings(settings):
 def load_scraps():
     return load_json(SCRAPS_FILE, {})
 
-def toggle_scrap(date_str, media_name, article):
+def load_folders():
+    """폴더 목록 로드"""
+    return load_json(FOLDERS_FILE, {"folders": ["기본"], "default": "기본"})
+
+def save_folders(folders_data):
+    """폴더 목록 저장"""
+    save_json(FOLDERS_FILE, folders_data)
+
+def add_folder(folder_name):
+    """새 폴더 추가"""
+    folders_data = load_folders()
+    if folder_name not in folders_data["folders"]:
+        folders_data["folders"].append(folder_name)
+        save_folders(folders_data)
+        return True
+    return False
+
+def get_folder_list():
+    """폴더 목록 반환"""
+    return load_folders().get("folders", ["기본"])
+
+def toggle_scrap(date_str, media_name, article, folder="기본", tags=None):
     """
     스크랩을 추가하거나 이미 존재하면 제거합니다. (Toggle)
     Returns: True if added, False if removed
     """
+    if tags is None:
+        tags = []
+        
     scraps = load_scraps()
     if date_str not in scraps:
         scraps[date_str] = []
@@ -68,11 +93,71 @@ def toggle_scrap(date_str, media_name, article):
         scrap_item = article.copy()
         scrap_item['media'] = media_name
         scrap_item['scrapped_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        scrap_item['read'] = False  # 읽음 상태 기본값
+        scrap_item['read'] = False
+        scrap_item['folder'] = folder  # 폴더 추가
+        scrap_item['tags'] = tags  # 태그 추가
         
         scraps[date_str].append(scrap_item)
         save_json(SCRAPS_FILE, scraps)
         return True
+
+def update_scrap_folder(date_str, url, folder):
+    """스크랩의 폴더 변경"""
+    scraps = load_scraps()
+    if date_str in scraps:
+        for s in scraps[date_str]:
+            if s['url'] == url:
+                s['folder'] = folder
+                save_json(SCRAPS_FILE, scraps)
+                return True
+    return False
+
+def update_scrap_tags(date_str, url, tags):
+    """스크랩의 태그 변경"""
+    scraps = load_scraps()
+    if date_str in scraps:
+        for s in scraps[date_str]:
+            if s['url'] == url:
+                s['tags'] = tags
+                save_json(SCRAPS_FILE, scraps)
+                return True
+    return False
+
+def get_scraps_by_folder(folder_name):
+    """특정 폴더의 스크랩만 반환"""
+    scraps = load_scraps()
+    result = {}
+    for date_str, items in scraps.items():
+        filtered = [s for s in items if s.get('folder', '기본') == folder_name]
+        if filtered:
+            result[date_str] = filtered
+    return result
+
+def export_scraps_to_markdown(scraps_data, filename="export.md"):
+    """스크랩을 마크다운 파일로 내보내기"""
+    lines = ["# 스크랩 내보내기\n"]
+    lines.append(f"생성일: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+    
+    for date_str in sorted(scraps_data.keys(), reverse=True):
+        lines.append(f"## 📅 {date_str}\n\n")
+        for item in scraps_data[date_str]:
+            folder = item.get('folder', '기본')
+            tags = item.get('tags', [])
+            tag_str = " ".join([f"#{t}" for t in tags]) if tags else ""
+            
+            lines.append(f"### [{item.get('media', '')}] {item['title']}\n")
+            if item.get('subtitle'):
+                lines.append(f"> {item['subtitle']}\n")
+            lines.append(f"- 📁 폴더: {folder}\n")
+            if tag_str:
+                lines.append(f"- 🏷️ 태그: {tag_str}\n")
+            lines.append(f"- 🔗 [기사 링크]({item['url']})\n")
+            lines.append(f"- ⏰ 스크랩: {item.get('scrapped_at', '')}\n\n")
+    
+    with open(filename, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+    
+    return filename
 
 def remove_scrap(date_str, url):
     """특정 스크랩 삭제 (명시적)"""

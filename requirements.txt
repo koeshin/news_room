@@ -3,3 +3,4 @@ playwright
 beautifulsoup4
 google-generativeai
 python-dotenv
+httpx
