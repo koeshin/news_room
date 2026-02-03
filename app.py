@@ -254,21 +254,42 @@ if menu == "뉴스룸":
                                             st.markdown(f"<a href='{art['url']}' target='_blank' style='text-decoration:none; color:gray; font-size:0.8em;'>기사 원문 ></a>", unsafe_allow_html=True)
 
                                         with col_b:
-                                            # 스크랩 버튼 (Toggle)
+                                            # 스크랩 버튼 (Popover)
                                             is_scrapped = art['url'] in st.session_state.scrapped_urls
-                                            btn_label = "★" if is_scrapped else "☆"
-                                            btn_help = "스크랩 해제" if is_scrapped else "스크랩"
                                             
-                                            if st.button(btn_label, key=f"scr_{cache_key}_{page['page']}_{idx}", help=btn_help):
-                                                # Toggle Action
-                                                added = storage.toggle_scrap(format_date_display(selected_date), selected_media, art)
-                                                if added:
-                                                    st.session_state.scrapped_urls.add(art['url'])
-                                                    st.toast("저장완료!", icon="✅")
-                                                else:
+                                            if is_scrapped:
+                                                # 이미 스크랩된 경우 바로 삭제 버튼
+                                                if st.button("★", key=f"scr_{cache_key}_{page['page']}_{idx}", help="스크랩 해제"):
+                                                    storage.toggle_scrap(format_date_display(selected_date), selected_media, art)
                                                     st.session_state.scrapped_urls.discard(art['url'])
                                                     st.toast("삭제됨!", icon="🗑️")
-                                                st.rerun()
+                                                    st.rerun()
+                                            else:
+                                                # 스크랩 추가 - Popover 사용
+                                                with st.popover("☆", use_container_width=False):
+                                                    st.write("📁 폴더 선택")
+                                                    
+                                                    folder_list = storage.get_folder_list()
+                                                    if not folder_list:
+                                                        folder_list = ["기본"]
+                                                    
+                                                    selected_folder = st.selectbox(
+                                                        "폴더",
+                                                        folder_list,
+                                                        label_visibility="collapsed",
+                                                        key=f"folder_select_{cache_key}_{page['page']}_{idx}"
+                                                    )
+                                                    
+                                                    if st.button("💾 저장", key=f"save_{cache_key}_{page['page']}_{idx}", type="primary", use_container_width=True):
+                                                        storage.toggle_scrap(
+                                                            format_date_display(selected_date),
+                                                            selected_media,
+                                                            art,
+                                                            folder=selected_folder
+                                                        )
+                                                        st.session_state.scrapped_urls.add(art['url'])
+                                                        st.toast(f"'{selected_folder}' 폴더에 저장!", icon="✅")
+                                                        st.rerun()
                                         st.divider()
 
 # 2. 스크랩 북 화면
