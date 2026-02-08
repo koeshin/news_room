@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>⚙️ 설정</h1>
+</div>
+
+<div class="settings-section">
+    <h3 class="section-title">언론사 추가</h3>
+    <button class="add-btn" onclick="openMediaModal()">+ 언론사 추가하기</button>
+</div>
+
+<div class="settings-section">
+    <h3 class="section-title">구독 언론사 관리</h3>
+    <div class="media-grid" id="subscribedMedia">
+        {% for media in media_list %}
+        <div class="media-card" data-oid="{{ media.oid }}">
+            <span class="media-name">{{ media.name }}</span>
+            <span class="media-oid">{{ media.oid }}</span>
+            <button class="remove-btn" onclick="removeMedia('{{ media.oid }}', '{{ media.name }}')"
+                title="삭제">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% if not media_list %}
+    <p class="empty-msg">구독 중인 언론사가 없습니다. 위의 버튼으로 추가해주세요.</p>
+    {% endif %}
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="mediaModal" onclick="closeMediaModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>언론사 선택</h3>
+            <button class="close-btn" onclick="closeMediaModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <!-- Category Tabs -->
+            <div class="category-tabs">
+                {% if media_codes and media_codes.categories %}
+                {% for key, cat in media_codes.categories.items() %}
+                <button class="cat-tab" onclick="showCategory('{{ key }}')" id="tab-{{ key }}">{{ cat.name }}</button>
+                {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Media Grid per Category -->
+            {% if media_codes and media_codes.categories %}
+            {% for key, cat in media_codes.categories.items() %}
+            <div class="category-content" id="cat-{{ key }}" style="display: none;">
+                <div class="media-select-grid">
+                    {% for m in cat.media %}
+                    <div class="media-select-item {% if m.oid in subscribed_oids %}already-added{% endif %}"
+                        data-oid="{{ m.oid }}" data-name="{{ m.name }}"
+                        onclick="selectMedia('{{ m.oid }}', '{{ m.name }}', this)">
+                        <span class="select-name">{{ m.name }}</span>
+                        {% if m.oid in subscribed_oids %}
+                        <span class="added-badge">추가됨</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .settings-section {
+        background: white;
+        padding: 24px;
+        border-radius: 14px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0 0 16px 0;
+        color: #333;
+    }
+
+    .add-btn {
+        background: linear-gradient(135deg, #FF4B4B, #FF6B6B);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .add-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 75, 75, 0.3);
+    }
+
+    .media-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .media-card {
+        background: #f8f9fa;
+        padding: 14px 16px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        transition: all 0.2s;
+    }
+
+    .media-card:hover {
+        background: #f0f0f0;
+    }
+
+    .media-name {
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .media-oid {
+        color: #999;
+        font-size: 0.8rem;
+    }
+
+    .remove-btn {
+        background: none;
+        border: none;
+        color: #ccc;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0 4px;
+    }
+
+    .remove-btn:hover {
+        color: #FF4B4B;
+    }
+
+    .empty-msg {
+        color: #888;
+        text-align: center;
+        padding: 40px;
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.8rem;
+        color: #999;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .close-btn:hover {
+        color: #333;
+    }
+
+    .modal-body {
+        padding: 20px 24px;
+        overflow-y: auto;
+    }
+
+    .category-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .cat-tab {
+        background: #f0f0f0;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .cat-tab:hover {
+        background: #e0e0e0;
+    }
+
+    .cat-tab.active {
+        background: #FF4B4B;
+        color: white;
+    }
+
+    .media-select-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .media-select-item {
+        background: #f8f9fa;
+        padding: 12px 14px;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+        position: relative;
+    }
+
+    .media-select-item:hover {
+        background: #e8f5e9;
+        border-color: #4CAF50;
+    }
+
+    .media-select-item.already-added {
+        background: #e3f2fd;
+        opacity: 0.7;
+        cursor: default;
+    }
+
+    .select-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .added-badge {
+        display: block;
+        font-size: 0.7rem;
+        color: #1565C0;
+        margin-top: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Show first category by default
+    document.addEventListener('DOMContentLoaded', function () {
+        const firstTab = document.querySelector('.cat-tab');
+        if (firstTab) {
+            firstTab.click();
+        }
+    });
+
+    function openMediaModal() {
+        document.getElementById('mediaModal').classList.add('show');
+    }
+
+    function closeMediaModal(event) {
+        if (!event || event.target === event.currentTarget) {
+            document.getElementById('mediaModal').classList.remove('show');
+        }
+    }
+
+    function showCategory(key) {
+        // Hide all categories
+        document.querySelectorAll('.category-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.cat-tab').forEach(el => el.classList.remove('active'));
+
+        // Show selected
+        document.getElementById(`cat-${key}`).style.display = 'block';
+        document.getElementById(`tab-${key}`).classList.add('active');
+    }
+
+    async function selectMedia(oid, name, element) {
+        if (element.classList.contains('already-added')) return;
+
+        try {
+            // Get current media list from DOM
+            const cards = document.querySelectorAll('#subscribedMedia .media-card');
+            const currentList = Array.from(cards).map(c => ({
+                oid: c.dataset.oid,
+                name: c.querySelector('.media-name').textContent
+            }));
+
+            // Add new media
+            currentList.push({ oid, name });
+
+            // Save
+            await postData('/api/settings/update_media', { media_list: currentList });
+
+            // Update UI
+            element.classList.add('already-added');
+            const badge = document.createElement('span');
+            badge.className = 'added-badge';
+            badge.textContent = '추가됨';
+            element.appendChild(badge);
+
+            // Add to subscribed grid
+            const grid = document.getElementById('subscribedMedia');
+            const newCard = document.createElement('div');
+            newCard.className = 'media-card';
+            newCard.dataset.oid = oid;
+            newCard.innerHTML = `
+                <span class="media-name">${name}</span>
+                <span class="media-oid">${oid}</span>
+                <button class="remove-btn" onclick="removeMedia('${oid}', '${name}')" title="삭제">✕</button>
+            `;
+            grid.appendChild(newCard);
+
+            // Remove empty message if exists
+            const emptyMsg = document.querySelector('.empty-msg');
+            if (emptyMsg) emptyMsg.remove();
+
+        } catch (e) {
+            console.error(e);
+            alert('추가 실패');
+        }
+    }
+
+    async function removeMedia(oid, name) {
+        if (!confirm(`${name}을(를) 삭제하시겠습니까?`)) return;
+
+        try {
+            // Get current list minus this one
+            const cards = document.querySelectorAll('#subscribedMedia .media-card');
+            const newList = Array.from(cards)
+                .filter(c => c.dataset.oid !== oid)
+                .map(c => ({
+                    oid: c.dataset.oid,
+                    name: c.querySelector('.media-name').textContent
+                }));
+
+            await postData('/api/settings/update_media', { media_list: newList });
+
+            // Remove from DOM
+            const card = document.querySelector(`.media-card[data-oid="${oid}"]`);
+            if (card) card.remove();
+
+            // Update modal - remove "already-added" class
+            const modalItem = document.querySelector(`.media-select-item[data-oid="${oid}"]`);
+            if (modalItem) {
+                modalItem.classList.remove('already-added');
+                const badge = modalItem.querySelector('.added-badge');
+                if (badge) badge.remove();
+            }
+
+        } catch (e) {
+            console.error(e);
+            alert('삭제 실패');
+        }
+    }
+</script>
+{% endblock %}

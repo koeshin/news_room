@@ -1,15 +1,30 @@
+# System files
 __pycache__/
 *.pyc
 .DS_Store
 .env
+
+# Virtual Environments
 venv/
 env/
+venv_newsroom/
+news_room_v2/venv/
+
+# Secrets
 .streamlit/secrets.toml
 
-# Data files
+# Agent & Skills (Exclude from git)
+.agent/
+.skills/
+
+# Data & Logs (Exclude large files)
 scraps.json
-debug_*.png
-debug_*.webp
-debug_*.py
-debug_*.html
+debug_*
 *httpx*
+news_room_v2/scraped_data_history/
+news_room_v2/chroma_db/
+news_room_v2/data/*.json
+chroma_db/
+news_room_v1/scraped_data/
+*.jsonl
+*.log

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Room v2</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>🗞️ News Room</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="/newsroom" class="nav-item {% if request.url.path == '/newsroom' %}active{% endif %}">뉴스룸</a>
+                <a href="/recommendations"
+                    class="nav-item {% if request.url.path == '/recommendations' %}active{% endif %}">AI 추천</a>
+                <a href="/scrapbook"
+                    class="nav-item {% if request.url.path == '/scrapbook' %}active{% endif %}">스크랩북</a>
+                <a href="/settings" class="nav-item {% if request.url.path == '/settings' %}active{% endif %}">설정</a>
+            </nav>
+            <div class="sidebar-footer">
+                <p>v2.0.0</p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Common JS -->
+    <script>
+        // Simple helper for API calls
+        async function postData(url = '', data = {}) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

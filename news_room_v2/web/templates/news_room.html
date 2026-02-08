@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📰 뉴스룸</h1>
+    <div class="controls">
+        <form method="get" action="/newsroom" id="controlForm">
+            <select name="media_oid" onchange="this.form.submit()">
+                {% for media in media_list %}
+                <option value="{{ media.oid }}" {% if selected_media and selected_media.oid==media.oid %}selected{%
+                    endif %}>
+                    {{ media.name }}
+                </option>
+                {% endfor %}
+            </select>
+            <input type="date" name="date_display" id="datePicker" value=""> <!-- Value set by JS -->
+            <input type="hidden" name="date" id="dateInput" value="{{ selected_date }}">
+        </form>
+    </div>
+</div>
+
+{% if chunks %}
+<div class="chunk-nav">
+    {% for chunk in chunks %}
+    <a href="/newsroom?date={{ selected_date }}&media_oid={{ selected_media.oid }}&chunk={{ chunk.index }}"
+        class="chunk-tab {% if chunk.index == current_chunk %}active{% endif %}">
+        {{ chunk.label }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not grouped_news %}
+<div class="empty-state">
+    <p>해당 날짜의 뉴스가 없습니다.</p>
+</div>
+{% else %}
+{% for page, articles in grouped_news.items() %}
+<div class="news-section">
+    <h2 class="section-title">{{ page }}</h2>
+    <div class="news-grid">
+        {% for article in articles %}
+        <div class="news-card">
+            <span class="media-badge">{{ selected_media.name }}</span>
+            <div class="card-content">
+                <a href="{{ article.url }}" target="_blank" class="card-title">{{ article.title }}</a>
+                {% if article.subtitle %}
+                <p class="card-summary">{{ article.subtitle }}</p>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <button class="action-btn {% if article.url in scrapped_urls %}saved{% endif %}"
+                    onclick="toggleScrap(this, '{{ article.url }}', '{{ article.title|escape }}', '{{ article.subtitle|escape }}')">
+                    {% if article.url in scrapped_urls %}
+                    ★
+                    {% else %}
+                    ☆
+                    {% endif %}
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize Date Picker with localStorage support
+    const dateInput = document.getElementById('dateInput');
+    const datePicker = document.getElementById('datePicker');
+
+    // Check if we should restore saved date (only on initial page load without date param)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasDateParam = urlParams.has('date');
+    const savedDate = localStorage.getItem('newsroom_selected_date');
+
+    // If no date in URL and we have a saved date, redirect to saved date
+    if (!hasDateParam && savedDate && savedDate !== dateInput.value) {
+        window.location.href = `/newsroom?date=${savedDate}`;
+    }
+
+    // YYYYMMDD -> YYYY-MM-DD
+    const yyyymmdd = dateInput.value;
+    const formattedDate = yyyymmdd.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3');
+    datePicker.value = formattedDate;
+
+    // Save current date to localStorage
+    localStorage.setItem('newsroom_selected_date', yyyymmdd);
+
+    datePicker.addEventListener('change', (e) => {
+        // YYYY-MM-DD -> YYYYMMDD
+        const val = e.target.value.replace(/-/g, '');
+        dateInput.value = val;
+        localStorage.setItem('newsroom_selected_date', val);
+        document.getElementById('controlForm').submit();
+    });
+
+    // Toggle Scrap
+    async function toggleScrap(btn, url, title, subtitle) {
+        const isSaved = btn.classList.contains('saved');
+
+        // Optimistic UI Update
+        if (isSaved) {
+            btn.classList.remove('saved');
+            btn.innerHTML = '저장 💾';
+        } else {
+            btn.classList.add('saved');
+            btn.innerHTML = '저장됨 ✅';
+        }
+
+        const dateDisplay = document.getElementById('datePicker').value; // YYYY-MM-DD
+        const mediaName = "{{ selected_media.name }}";
+
+        // Call API
+        try {
+            const data = await postData('/api/scrap', {
+                date: dateDisplay,
+                media_name: mediaName,
+                article: {
+                    url: url,
+                    title: title,
+                    subtitle: subtitle,
+                    media_name: mediaName,
+                    date: dateDisplay.replace(/-/g, '')
+                }
+            });
+            console.log(data);
+        } catch (error) {
+            console.error('Error:', error);
+            // Revert on error
+            if (isSaved) {
+                btn.classList.add('saved');
+                btn.innerHTML = '저장됨 ✅';
+            } else {
+                btn.classList.remove('saved');
+                btn.innerHTML = '저장 💾';
+            }
+            alert('저장 중 오류가 발생했습니다.');
+        }
+    }
+</script>
+{% endblock %}

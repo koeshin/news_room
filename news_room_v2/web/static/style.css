@@ -1,0 +1,350 @@
+:root {
+    --bg-color: #FAFAFA;
+    --sidebar-width: 260px;
+    --primary-color: #FF4B4B;
+    --text-color: #222;
+    --gray-color: #666;
+    --border-color: #E0E0E0;
+    --card-bg: #FFFFFF;
+}
+
+body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.app-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: #fff;
+    border-right: 1px solid var(--border-color);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    box-sizing: border-box;
+    z-index: 100;
+}
+
+.logo h2 {
+    font-size: 1.4rem;
+    margin: 0 0 40px 0;
+    color: var(--text-color);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.nav-item {
+    text-decoration: none;
+    color: var(--gray-color);
+    padding: 12px 18px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+}
+
+.nav-item:hover {
+    background-color: #F5F5F5;
+    color: var(--text-color);
+    transform: translateX(3px);
+}
+
+.nav-item.active {
+    background-color: #FFF0F0;
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+.sidebar-footer {
+    font-size: 0.8rem;
+    color: #AAA;
+    margin-top: 20px;
+}
+
+/* Main Content */
+.main-content {
+    flex-grow: 1;
+    margin-left: var(--sidebar-width);
+    padding: 40px 60px;
+    max-width: 1600px;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #EEE;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -1px;
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+}
+
+select,
+input[type="date"] {
+    padding: 10px 16px;
+    border: 1px solid #DDD;
+    border-radius: 10px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background-color: #FFF;
+    transition: border-color 0.2s;
+    outline: none;
+}
+
+select:focus,
+input[type="date"]:focus {
+    border-color: var(--primary-color);
+}
+
+/* Chunk Navigation */
+.chunk-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.chunk-tab {
+    text-decoration: none;
+    color: #555;
+    background-color: #FFF;
+    border: 1px solid #E0E0E0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.chunk-tab:hover {
+    background-color: #F5F5F5;
+    transform: translateY(-2px);
+}
+
+.chunk-tab.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 10px rgba(255, 75, 75, 0.3);
+}
+
+/* News Section */
+.news-section {
+    margin-bottom: 60px;
+}
+
+.section-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #222;
+    margin: 0 0 25px 0;
+    letter-spacing: -0.5px;
+    position: relative;
+    display: inline-block;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 40%;
+    height: 4px;
+    background-color: var(--primary-color);
+    margin-top: 8px;
+    border-radius: 2px;
+}
+
+/* News Grid (2 columns) */
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.news-card {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.news-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+.news-card .card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    font-size: 0.85rem;
+    align-items: center;
+}
+
+.page-badge {
+    background-color: #333;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.8rem;
+}
+
+.media-badge {
+    color: #888;
+    font-weight: 600;
+    background-color: #F5F5F5;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    text-decoration: none;
+    line-height: 1.5;
+    display: block;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.card-title:hover {
+    color: var(--primary-color);
+}
+
+.card-summary {
+    font-size: 0.9rem;
+    color: #777;
+    line-height: 1.5;
+    margin: 4px 0 0 0;
+    word-break: keep-all;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-shrink: 0;
+}
+
+.action-btn {
+    background: #FFF;
+    border: 1px solid #EAEAEA;
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: #555;
+    transition: all 0.2s;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.action-btn:hover {
+    background-color: #FFF0F0;
+    border-color: #FFCDCD;
+    color: var(--primary-color);
+}
+
+.action-btn.saved {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+    border-color: #A5D6A7;
+}
+
+.score-btn {
+    flex: 1;
+    background: #FFF;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 8px 0;
+    cursor: pointer;
+    font-weight: 700;
+    color: #555;
+    transition: all 0.2s;
+}
+
+.score-btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 100px 20px;
+    color: #999;
+    background: #FFF;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #aaa;
+}

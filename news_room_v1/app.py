@@ -5,6 +5,8 @@ import scraper
 import storage
 import analysis
 import time
+import threading
+import json
 
 # 페이지 설정
 st.set_page_config(page_title="나의 뉴스룸", layout="wide")
@@ -23,6 +25,12 @@ if keyword_filter:
 if "news_data" not in st.session_state:
     st.session_state.news_data = {}
 
+# 백그라운드 스크래핑 상태
+if "bg_scraping_started" not in st.session_state:
+    st.session_state.bg_scraping_started = False
+if "bg_scraping_date" not in st.session_state:
+    st.session_state.bg_scraping_date = None
+
 # 스크랩 상태 캐싱 (UI 반응 속도 향상용)
 if "scrapped_urls" not in st.session_state:
     st.session_state.scrapped_urls = set()
@@ -31,6 +39,19 @@ if "scrapped_urls" not in st.session_state:
     for date_key in all_scraps:
         for s in all_scraps[date_key]:
             st.session_state.scrapped_urls.add(s['url'])
+
+def background_scrape_all(media_list, date_str, exclude_oid=None):
+    """백그라운드에서 모든 언론사 스크래핑"""
+    for media in media_list:
+        if media['oid'] == exclude_oid:
+            continue
+        # 캐시 확인 후 없으면 스크래핑
+        if not storage.load_news_cache(date_str, media['oid']):
+            try:
+                asyncio.run(scraper.get_newspaper_data(media['oid'], date_str))
+                print(f"[BG] {media['name']} 스크래핑 완료")
+            except Exception as e:
+                print(f"[BG] {media['name']} 스크래핑 실패: {e}")
 
 def get_today():
     return datetime.now()
@@ -102,6 +123,17 @@ if menu == "뉴스룸":
                     else:
                         st.session_state.news_data[cache_key] = [] # 데이터 없음 표시
         
+        # 백그라운드 스크래핑 시작 (첫 번째 언론사 로드 후)
+        if not st.session_state.bg_scraping_started or st.session_state.bg_scraping_date != date_str:
+            st.session_state.bg_scraping_started = True
+            st.session_state.bg_scraping_date = date_str
+            thread = threading.Thread(
+                target=background_scrape_all,
+                args=(media_list, date_str, oid),
+                daemon=True
+            )
+            thread.start()
+            st.toast("🔄 백그라운드에서 다른 언론사 스크래핑 시작...", icon="⏳")
                 
         # 새로고침 버튼 (강제 새로고침)
         if st.button("🔄 뉴스 새로고침", help="캐시를 무시하고 최신 데이터를 가져옵니다."):
@@ -401,26 +433,37 @@ elif menu == "환경 설정":
     st.divider()
     
     st.subheader("신규 언론사 추가")
-    with st.form("add_media_form"):
-        new_name = st.text_input("언론사 이름 (예: 매일경제)")
-        new_oid = st.text_input("언론사 OID (예: 009)")
-        submit = st.form_submit_button("추가하기")
-        
-        if submit:
-            if new_name and new_oid:
-                # 중복 체크
-                if any(m['oid'] == new_oid for m in settings['media_list']):
-                    st.error("이미 존재하는 OID입니다.")
-                else:
-                    settings['media_list'].append({"name": new_name, "oid": new_oid})
-                    storage.save_settings(settings)
-                    st.success(f"{new_name}이(가) 추가되었습니다!")
-                    st.rerun()
-            else:
-                st.error("이름과 OID를 모두 입력해 주세요.")
     
-    st.info("""
-    **OID 찾는 법:** 
-    네이버 뉴스 '신문 보기' 페이지에서 해당 언론사를 클릭했을 때, 
-    브라우저 주소창의 `/press/XXX/` 부분에서 **XXX** 숫자가 OID입니다.
-    """)
+    # 기존 언론사 코드 목록에서 선택
+    try:
+        with open("naver_media_codes.json", "r", encoding="utf-8") as f:
+            media_codes = json.load(f)
+        available_media = media_codes.get("flat_list", [])
+        
+        # 이미 추가된 OID 제외
+        existing_oids = {m['oid'] for m in settings['media_list']}
+        available_media = [m for m in available_media if m['oid'] not in existing_oids]
+        
+        if available_media:
+            # 카테고리별로 그룹화하여 표시
+            media_options = [f"{m['name']} ({m['category']})" for m in available_media]
+            selected_idx = st.selectbox(
+                "추가할 언론사 선택",
+                range(len(media_options)),
+                format_func=lambda x: media_options[x]
+            )
+            
+            if st.button("➕ 추가하기", type="primary"):
+                selected_media = available_media[selected_idx]
+                settings['media_list'].append({
+                    "name": selected_media['name'],
+                    "oid": selected_media['oid']
+                })
+                storage.save_settings(settings)
+                st.success(f"{selected_media['name']}이(가) 추가되었습니다!")
+                st.rerun()
+        else:
+            st.info("✅ 모든 언론사가 이미 추가되어 있습니다.")
+            
+    except FileNotFoundError:
+        st.error("naver_media_codes.json 파일을 찾을 수 없습니다.")

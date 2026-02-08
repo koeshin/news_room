@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📂 스크랩북</h1>
+</div>
+
+{% if not scraps %}
+<div class="empty-state">
+    <p>저장된 기사가 없습니다.</p>
+</div>
+{% else %}
+{% for date, items in scraps.items()|sort(reverse=True) %}
+<div class="date-section">
+    <h3>{{ date }}</h3>
+    <div class="scrap-list">
+        {% for item in items %}
+        <div class="scrap-item">
+            <a href="{{ item.url }}" target="_blank">{{ item.title }}</a>
+            <span class="media-badge">{{ item.media }}</span>
+            <button class="delete-btn" onclick="deleteScrap(this, '{{ date }}', '{{ item.url }}')">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<style>
+    .scrap-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+
+    .scrap-item {
+        display: flex;
+        align-items: center;
+        background: white;
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        gap: 15px;
+    }
+
+    .scrap-item a {
+        flex-grow: 1;
+        text-decoration: none;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .scrap-item a:hover {
+        color: #FF4B4B;
+    }
+</style>
+
+<script>
+    async function deleteScrap(btn, date, url) {
+        if (!confirm('정말 삭제하시겠습니까?')) return;
+
+        // Call API (Need to implement Unscrap or Toggle)
+        // For now reusing toggle scrap which handles add/remove if logic permits, 
+        // but app.py logic was: if in list -> remove.
+        // Our api/scrap calls storage.toggle_scrap.
+        // storage.toggle_scrap checks existence.
+
+        // Just toggle it again to remove.
+        try {
+            await postData('/api/scrap', {
+                date: date, // Scrap date
+                media_name: '', // Not needed for remove usually if URL matches
+                article: { url: url }
+            });
+            // Remove from DOM
+            btn.closest('.scrap-item').remove();
+        } catch (e) { console.error(e); }
+    }
+</script>
+{% endblock %}
