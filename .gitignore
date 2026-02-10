@@ -5,7 +5,7 @@ __pycache__/
 .env
 
 # Virtual Environments
-venv/
+venv_*/
 env/
 venv_newsroom/
 news_room_v2/venv/

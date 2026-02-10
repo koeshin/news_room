@@ -103,3 +103,80 @@ if __name__ == "__main__":
         json.dump(evaluated_recs, f, ensure_ascii=False, indent=2)
     
     print(f"✅ Feedback saved to {args.output}")
+
+def update_persona_definition(persona_name: str, scored_articles: List[Dict]):
+    """
+    Refines the persona definition using Gemini 1.5 Flash based on scored articles.
+    """
+    if not os.environ.get("GEMINI_API_KEY"):
+        print("⚠️ GEMINI_API_KEY not found. Skipping persona update.")
+        return
+
+    current_def = load_persona(persona_name)
+    if not current_def:
+        print(f"❌ Persona {persona_name} not found.")
+        return
+
+    # Filter articles
+    high_score_articles = [a for a in scored_articles if a.get("agent_score", 0) >= 4]
+    low_score_articles = [a for a in scored_articles if a.get("agent_score", 0) <= 2]
+
+    print(f"  - Analyzing {len(high_score_articles)} high-score and {len(low_score_articles)} low-score articles...")
+
+    try:
+        genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+        model = genai.GenerativeModel('gemini-1.5-flash')
+
+        # --- PROMPT SECTION (Placeholder for User) ---
+        prompt = f"""
+        You are an expert persona architect.
+        
+        Current Persona Definition:
+        {current_def}
+
+        High Score Articles (User Liked - Score 4-5):
+        {json.dumps([{ 'title': a.get('title'), 'summary': a.get('summary_sentences') } for a in high_score_articles], ensure_ascii=False, indent=1)}
+
+        Low Score Articles (User Disliked - Score 1-2):
+        {json.dumps([{ 'title': a.get('title'), 'summary': a.get('summary_sentences') } for a in low_score_articles], ensure_ascii=False, indent=1)}
+
+        Task:
+        Based on the above feedback, refine the persona definition.
+        1. "Key Interests": Add specific topics found in High Score Articles.
+        2. "Keywords for Filtering": Keep this for POSITIVE filtering references.
+        3. Create or Update a section "## Negative Keywords": Add specific keywords from Low Score Articles here. These will be used to penalize future articles.
+        4. Maintain the existing markdown format (Headers, Bullets).
+
+        [TODO: USER - PLEASE CUSTOMIZE THIS PROMPT FOR BETTER RESULTS]
+        
+        Return the ENTIRE updated markdown content for the persona file.
+        Do not include markdown code fence.
+        """
+        # ---------------------------------------------
+
+        response = model.generate_content(prompt)
+        new_def = response.text.strip()
+        
+        # Clean up markdown fences if present
+        if new_def.startswith("```markdown"):
+            new_def = new_def[11:]
+        elif new_def.startswith("```"):
+            new_def = new_def[3:]
+        if new_def.endswith("```"):
+            new_def = new_def[:-3]
+        
+        new_def = new_def.strip()
+
+        # Implementation check: Basic validation to ensure we don't wipe the file with empty string
+        if len(new_def) > 50 and "# Persona:" in new_def:
+            # Save back to file
+            file_path = f"news_room_v2/personas/persona_{persona_name}.md"
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(new_def)
+            print(f"✨ Persona {persona_name} updated successfully!")
+            print(f"Updated content saved to {file_path}")
+        else:
+            print("⚠️ generated persona definition seems invalid. Skipping update.")
+
+    except Exception as e:
+        print(f"❌ Error updating persona: {e}")

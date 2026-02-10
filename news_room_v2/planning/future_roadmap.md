@@ -22,7 +22,6 @@
 
 ### 할 일 (Todo)
 - [ ] **Daily Keyword Generation**: 매일 밤, 그날의 사용자 활동(스크랩, 평가)을 요약하여 `personas/persona_20s.md`의 키워드 섹션을 LLM으로 자동 업데이트.
-- [ ] **Context Awareness**: "주말에는 가벼운 에세이", "평일 아침에는 경제 뉴스" 등 시간/요일별 선호도 학습 모델 추가.
 - [ ] **Interest Decay**: 오래된 관심사의 가중치를 서서히 낮추는 로직 구현 (최신 관심사 우선).
 
 ---

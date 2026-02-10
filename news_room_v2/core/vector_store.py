@@ -7,17 +7,16 @@ from chromadb.utils import embedding_functions
 # --- Configuration ---
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Data is in the project root, one level up from this script
-# --- Configuration ---
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# Data is in the project root, one level up from this script
 DATA_DIR = os.path.join(SCRIPT_DIR, "..", "scraped_data_history")
-# DB is in the same directory as this script -> NO, it should be in parent? ORIGINAL WAS IN SCRIPT_DIR (news_room_v2). Now script is in news_room_v2/core. DB should be in news_room_v2/chroma_db. So ".." is correct.
+# DB is in the parent directory of 'core'
 DB_PATH = os.path.join(SCRIPT_DIR, "..", "chroma_db")
 COLLECTION_NAME = "news_articles"
 MODEL_NAME = "intfloat/multilingual-e5-small"
 
 def get_scraped_files(root_dir):
     files = []
+    if not os.path.exists(root_dir):
+        return []
     for dirpath, _, filenames in os.walk(root_dir):
         for f in filenames:
             if f.endswith(".json"):
@@ -25,7 +24,7 @@ def get_scraped_files(root_dir):
     return files
 
 def main():
-    print(f"🔄 Initializing Vector Store in {DB_PATH}...")
+    print(f"Initializing Vector Store in {DB_PATH}...")
     
     # 1. Setup ChromaDB
     client = chromadb.PersistentClient(path=DB_PATH)
@@ -53,7 +52,7 @@ def main():
 
     # 3. Process Data
     files = get_scraped_files(DATA_DIR)
-    print(f"📂 Found {len(files)} JSON files to process.")
+    print(f"Found {len(files)} JSON files to process.")
     
     total_articles = 0
     
@@ -62,7 +61,7 @@ def main():
             try:
                 articles = json.load(f)
             except json.JSONDecodeError:
-                print(f"❌ Error reading {file_path}")
+                print(f"Error reading {file_path}")
                 continue
             
             ids = []
@@ -104,9 +103,9 @@ def main():
                     metadatas=metadatas
                 )
                 total_articles += len(ids)
-                print(f"✅ Processed {len(ids)} articles from {os.path.basename(file_path)}")
+                print(f"Processed {len(ids)} articles from {os.path.basename(file_path)}")
 
-    print(f"\n🎉 Finished! Total {total_articles} articles stored in Vector DB.")
+    print(f"\nFinished! Total {total_articles} articles stored in Vector DB.")
 
 if __name__ == "__main__":
     main()
