@@ -1,111 +1,81 @@
-# News Room Project
+# News Room V2: Personalized AI News Curator
 
+**News Room V2** is an advanced news recommendation system that delivers highly personalized content by combining vector-based semantic search with LLM-driven reranking. It is designed to understand nuanced user interests while strictly adhering to negative preferences.
 
-네이버 뉴스의 신문 지면 서비스를 활용하여 기사를 면 단위로 모아볼 수 있는 애플리케이션입니다. 종이 신문의 레이아웃을 디지털 환경에서 효율적으로 탐색하고 관리할 수 있도록 제작되었습니다.
+![Architecture](https://via.placeholder.com/800x400?text=News+Room+V2+Architecture)
 
-## 주요 기능
+## Key Features
 
-### 기사 수집 및 탐색
-- 여러 언론사의 신문 지면을 1면부터 순서대로 확인
-- 섹션 기반 페이지네이션 (A1-10, A11-20, B1-10 등)
-- 키워드 필터링 (제목, 부제목 검색)
-- 초고속 스크래핑 (기존 대비 6.9배 향상)
+- **Hybrid Recommendation Engine**:
+    - **Stage 1 (Vector Search)**: Filters thousands of articles to find top candidates matching your "Interest Groups" (e.g., Tech, Economy).
+    - **Stage 2 (LLM Reranking)**: Uses **Gemini-3-Flash** to reorder articles based on your specific sentence-level preferences (e.g., "I need career advice").
+- **Strict Negative Filtering**:
+    - Explicitly blocks articles containing specific keywords (e.g., "Coupang") or topics (e.g., "Political Gossip") to reduce information noise.
+- **Auto-Tagging System**:
+    - Automatically extracts tags using **KeyBERT** and **Kiwi** for precise classification.
+- **Daily News Archive**:
+    - Automatically scrapes and archives news from major media outlets (Chosun, JoongAng, etc.) via **Playwright**.
 
-### 스크랩 관리
-- 관심 있는 기사 스크랩 및 읽음 상태 관리
-- 폴더와 태그 시스템으로 체계적인 분류
-- 마크다운 형식으로 내보내기 지원
+## Architecture Overview
 
-### AI 기능
-- AI Weekly Report: Gemini API로 주간 뉴스 요약 생성
-- AI 1-Line Summary: 빠른 기사 파악을 위한 한 줄 요약
+The system operates in a **Scrape -> Tag -> Index -> Recommend** pipeline:
 
-### 성능 최적화
-- Persistent Caching: 로컬에 데이터 저장하여 즉시 로딩
-- Lazy Loading: 선택한 언론사만 로드
-- Force Refresh: 캐시 우회 및 최신 데이터 가져오기
+1.  **Scraper**: Fetches raw news from target media sites (`scrapers/history_scraper.py`).
+2.  **Tag Generator**: Extracts keywords/entities from articles (`core/tag_generator.py`).
+3.  **Vector Store**: Embeds and indexes articles into **ChromaDB** (`core/vector_store.py`).
+4.  **Recommendation Engine**: Generates the final personalized feed (`core/recommendation.py`).
 
-## 성능 개선
+> For a detailed deep dive, see [System Overview](project_docs/system_overview.md).
 
-| 항목 | 기존 | 개선 | 향상률 |
-|------|------|------|------|
-| 스크래핑 속도 (456개 기사) | 85.56초 | 12.48초 | 6.9배 |
-| 병렬 처리 | 5개 동시 | 10개 동시 | 2배 |
-| 캐시 히트 시 로딩 | N/A | 즉시 | - |
+## Getting Started
 
-## 기술 스택
+### Prerequisites
+- Python 3.9+
+- Chrome Browser (for Playwright)
 
-```
-Frontend: Streamlit
-Scraping: Playwright (Chromium)
-AI: Google Gemini (Pro, Flash)
-Storage: JSON (로컬 캐싱)
-Async: asyncio + Semaphore
-```
-
-## 설치 및 실행
-
-### 요구사항
-- Python 3.8 이상
-
-### 1. 라이브러리 설치
+### Installation
 ```bash
+git clone <repo_url>
+cd news_room_v2
 pip install -r requirements.txt
+playwright install
 ```
 
-### 2. Playwright 브라우저 설치
+### Running the System
+**1. Start the Web UI:**
 ```bash
-playwright install chromium
+bash run_web.sh
 ```
+Access the dashboard at `http://localhost:8000`.
 
-### 3. 환경 변수 설정 (선택)
-AI 기능을 사용하려면 `.env` 파일 생성:
-```
-GOOGLE_API_KEY=your_api_key_here
-```
-
-### 4. 앱 실행
+**2. Manual Scraping:**
 ```bash
-streamlit run app.py
+python3 scrapers/history_scraper.py --start_date 20260211 --end_date 20260211
 ```
 
-## 프로젝트 구조
-
-```
-news_room/
-├── app.py                      # Streamlit UI 및 메인 로직
-├── scraper.py                  # 기본 스크래퍼
-├── scraper_optimized.py        # 최적화 스크래퍼 (6.9배 빠름)
-├── storage.py                  # 로컬 JSON 데이터 관리
-├── analysis.py                 # Gemini AI 분석
-├── naver_media_codes.json      # 언론사 코드
-├── scraped_data/               # 캐시 데이터 (날짜별/언론사별)
-└── walkthrough/                # 개발 기록
+**3. Generate Recommendations (CLI):**
+```bash
+python3 core/recommendation.py --persona 20s
 ```
 
-## 주요 파일 설명
 
-| 파일 | 역할 |
-|------|------|
-| `app.py` | Streamlit UI, 사용자 인터랙션, 워크플로우 제어 |
-| `scraper_optimized.py` | 최적화된 Playwright 스크래퍼 (브라우저 재사용, 리소스 차단) |
-| `storage.py` | 스크랩 데이터, 캐시, 폴더/태그 관리 |
-| `analysis.py` | Gemini API 연동 (주간 리포트, 1줄 요약) |
 
-## 사용 가이드
+## Persona Configuration
 
-### 1. 뉴스 보기
-- 날짜와 언론사 선택
-- 캐시가 있으면 즉시 로딩, 없으면 자동 스크래핑
-- Force Refresh 버튼으로 최신 데이터 가져오기
+You can customize the recommendation logic by editing the Markdown files in `personas/`. Define your **Interest Groups**, **Sentence Preferences**, and **Negative Constraints** to tailor the news feed to your exact needs.
 
-### 2. 스크랩 관리
-- 별 아이콘 클릭으로 스크랩 추가/제거
-- 스크랩북 탭에서 폴더 생성 및 태그 추가
-- 마크다운 내보내기로 외부 활용
+## Persona Refinement (Feedback Loop)
 
-### 3. AI 리포트
-- 스크랩북에서 "AI Weekly Report" 클릭
-- 주간 뉴스 요약 자동 생성
-- (일요일 자동 안내)
+The system includes a feedback loop to automatically refine the persona based on article evaluations.
 
+**1. Evaluate Recommendations:**
+Simulate user feedback (or use real feedback data) to score articles.
+```bash
+python3 core/agent_persona.py --persona 20s --action evaluate --input data/recommands.json --output data/feedback.json
+```
+
+**2. Update Persona:**
+Use the feedback to refine the persona definition (e.g., adding new positive/negative keywords).
+```bash
+python3 core/agent_persona.py --persona 20s --action update --input data/feedback.json
+```

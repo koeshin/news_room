@@ -21,10 +21,17 @@ news_room_v2/venv/
 scraps.json
 debug_*
 *httpx*
+processed_*.json
 news_room_v2/scraped_data_history/
 news_room_v2/chroma_db/
 news_room_v2/data/*.json
+news_room_v2/tag_comparison_results/
+news_room_v2/logs/
+comparison_log*.txt
+user_behavior_logs.jsonl
 chroma_db/
 news_room_v1/scraped_data/
 *.jsonl
 *.log
+*.txt
+!requirements.txt
