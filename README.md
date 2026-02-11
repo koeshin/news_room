@@ -2,7 +2,7 @@
 
 **News Room V2** is an advanced news recommendation system that delivers highly personalized content by combining vector-based semantic search with LLM-driven reranking. It is designed to understand nuanced user interests while strictly adhering to negative preferences.
 
-![Architecture](https://via.placeholder.com/800x400?text=News+Room+V2+Architecture)
+![Architecture](project_docs/images/architecture.png)
 
 ## Key Features
 
@@ -55,7 +55,7 @@ Access the dashboard at `http://localhost:8000`.
 python3 scrapers/history_scraper.py --start_date 20260211 --end_date 20260211
 ```
 
-**3. Generate Recommendations (CLI):**
+**3. Generate Recommendations :**
 ```bash
 python3 core/recommendation.py --persona 20s
 ```
