@@ -15,15 +15,18 @@
     - Automatically extracts tags using **KeyBERT** and **Kiwi** for precise classification.
 - **Daily News Archive**:
     - Automatically scrapes and archives news from major media outlets (Chosun, JoongAng, etc.) via **Playwright**.
+- **Continuous Persona Evolution**:
+    - Users can evaluate recommendations, and the system automatically refines the persona's keywords and preferences based on this feedback interaction.
 
 ## Architecture Overview
 
-The system operates in a **Scrape -> Tag -> Index -> Recommend** pipeline:
+The system operates in a **Scrape -> Tag -> Index -> Recommend -> Refine** pipeline:
 
 1.  **Scraper**: Fetches raw news from target media sites (`scrapers/history_scraper.py`).
 2.  **Tag Generator**: Extracts keywords/entities from articles (`core/tag_generator.py`).
 3.  **Vector Store**: Embeds and indexes articles into **ChromaDB** (`core/vector_store.py`).
 4.  **Recommendation Engine**: Generates the final personalized feed (`core/recommendation.py`).
+5.  **Persona Agent**: Evaluates feedback and updates the persona definition (`core/agent_persona.py`).
 
 > For a detailed deep dive, see [System Overview](project_docs/system_overview.md).
 
