@@ -181,7 +181,7 @@ async def news_room(request: Request,
 @app.get("/recommendations", response_class=HTMLResponse)
 async def recommendations(request: Request):
     # Load Recommendations
-    rec_file = os.path.join(PROJECT_ROOT, "data", "loop_output.json")
+    rec_file = os.path.join(PROJECT_ROOT, "data", "recommands.json")
     all_recs = []
     if os.path.exists(rec_file):
         with open(rec_file, 'r') as f:

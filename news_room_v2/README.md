@@ -1,0 +1,65 @@
+# News Room V2: Personalized AI News Curator
+
+**News Room V2** is an advanced news recommendation system that delivers highly personalized content by combining vector-based semantic search with LLM-driven reranking. It is designed to understand nuanced user interests while strictly adhering to negative preferences.
+
+![Architecture](https://via.placeholder.com/800x400?text=News+Room+V2+Architecture)
+
+## 🚀 Key Features
+
+- **Hybrid Recommendation Engine**:
+    - **Stage 1 (Vector Search)**: Filters thousands of articles to find top candidates matching your "Interest Groups" (e.g., Tech, Economy).
+    - **Stage 2 (LLM Reranking)**: Uses **Gemini-3-Flash** to reorder articles based on your specific sentence-level preferences (e.g., "I need career advice").
+- **Strict Negative Filtering**:
+    - Explicitly blocks articles containing specific keywords (e.g., "Coupang") or topics (e.g., "Political Gossip") to reduce information noise.
+- **Auto-Tagging System**:
+    - Automatically extracts tags using **KeyBERT** and **Kiwi** for precise classification.
+- **Daily News Archive**:
+    - Automatically scrapes and archives news from major media outlets (Chosun, JoongAng, etc.) via **Playwright**.
+
+## 🏗️ Architecture Overview
+
+The system operates in a **Scrape -> Tag -> Index -> Recommend** pipeline:
+
+1.  **Scraper**: Fetches raw news from target media sites (`scrapers/history_scraper.py`).
+2.  **Tag Generator**: Extracts keywords/entities from articles (`core/tag_generator.py`).
+3.  **Vector Store**: Embeds and indexes articles into **ChromaDB** (`core/vector_store.py`).
+4.  **Recommendation Engine**: Generates the final personalized feed (`core/recommendation.py`).
+
+> For a detailed deep dive, see [System Overview](project_docs/system_overview.md).
+
+## 🛠️ Getting Started
+
+### Prerequisites
+- Python 3.9+
+- Chrome Browser (for Playwright)
+
+### Installation
+```bash
+git clone <repo_url>
+cd news_room_v2
+pip install -r requirements.txt
+playwright install
+```
+
+### Running the System
+**1. Start the Web UI:**
+```bash
+bash run_web.sh
+```
+Access the dashboard at `http://localhost:8000`.
+
+**2. Manual Scraping:**
+```bash
+python3 scrapers/history_scraper.py --start_date 20260211 --end_date 20260211
+```
+
+**3. Generate Recommendations (CLI):**
+```bash
+python3 core/recommendation.py --persona 20s
+```
+
+
+
+## 👤 Persona Configuration
+
+You can customize the recommendation logic by editing the Markdown files in `personas/`. Define your **Interest Groups**, **Sentence Preferences**, and **Negative Constraints** to tailor the news feed to your exact needs.

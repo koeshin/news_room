@@ -5,8 +5,24 @@ import google.generativeai as genai
 from typing import List, Dict
 
 # --- Configuration ---
-# NOTE: YOU MUST SET YOUR GEMINI API KEY IN ENV VAR 'GEMINI_API_KEY'
-# export GEMINI_API_KEY="your_api_key_here"
+# Load .env manually since python-dotenv might not be installed
+def load_env_file():
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            for line in f:
+                if line.strip() and not line.startswith("#"):
+                    key, value = line.strip().split("=", 1)
+                    os.environ[key] = value
+
+load_env_file()
+
+# Use GOOGLE_API_KEY if available, otherwise check GEMINI_API_KEY
+if "GOOGLE_API_KEY" in os.environ:
+    os.environ["GEMINI_API_KEY"] = os.environ["GOOGLE_API_KEY"]
+elif "GEMINI_API_KEY" not in os.environ:
+    # Fallback or error warning
+    pass
 
 def load_persona(persona_name: str) -> str:
     """Loads persona definition from markdown file."""
@@ -28,7 +44,8 @@ def evaluate_articles(persona_def: str, articles: List[Dict]) -> List[Dict]:
         return articles
 
     genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+    model = genai.GenerativeModel('gemini-2.0-flash-exp')
 
     prompt = f"""
     You are acting as the following persona:
@@ -73,36 +90,6 @@ def evaluate_articles(persona_def: str, articles: List[Dict]) -> List[Dict]:
         print(f"Error during LLM evaluation: {e}")
 
     return articles
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--persona", type=str, required=True, help="20s, 30s, or 50s")
-    parser.add_argument("--input", type=str, required=True, help="Input JSON file with recommendations")
-    parser.add_argument("--output", type=str, required=True, help="Output JSON file with feedback")
-    args = parser.parse_args()
-
-    # 1. Load Persona
-    persona_def = load_persona(args.persona)
-    if not persona_def:
-        print(f"❌ Persona {args.persona} not found.")
-        exit(1)
-
-    # 2. Load Recommendations
-    with open(args.input, "r") as f:
-        recs = json.load(f)
-
-    # Filter for target persona
-    target_recs = [r for r in recs if r.get("persona") == args.persona]
-    
-    # 3. Evaluate
-    print(f"🤖 Agent ({args.persona}) is reading {len(target_recs)} articles...")
-    evaluated_recs = evaluate_articles(persona_def, target_recs)
-
-    # 4. Save Feedback
-    with open(args.output, "w") as f:
-        json.dump(evaluated_recs, f, ensure_ascii=False, indent=2)
-    
-    print(f"✅ Feedback saved to {args.output}")
 
 def update_persona_definition(persona_name: str, scored_articles: List[Dict]):
     """
@@ -180,3 +167,47 @@ def update_persona_definition(persona_name: str, scored_articles: List[Dict]):
 
     except Exception as e:
         print(f"❌ Error updating persona: {e}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--persona", type=str, required=True, help="20s, 30s, or 50s")
+    parser.add_argument("--action", type=str, choices=["evaluate", "update"], default="evaluate", help="Action to perform")
+    parser.add_argument("--input", type=str, required=True, help="Input JSON file (recommendations or feedback)")
+    parser.add_argument("--output", type=str, help="Output JSON file (for evaluation)")
+    args = parser.parse_args()
+
+    # 1. Load Persona
+    persona_def = load_persona(args.persona)
+    if not persona_def:
+        print(f"❌ Persona {args.persona} not found.")
+        exit(1)
+
+    if args.action == "evaluate":
+        if not args.output:
+            print("❌ --output is required for evaluation.")
+            exit(1)
+        
+        # 2. Load Recommendations
+        with open(args.input, "r") as f:
+            recs = json.load(f)
+
+        # Filter for target persona
+        target_recs = [r for r in recs if r.get("persona") == args.persona]
+        
+        # 3. Evaluate
+        print(f"🤖 Agent ({args.persona}) is reading {len(target_recs)} articles...")
+        evaluated_recs = evaluate_articles(persona_def, target_recs)
+
+        # 4. Save Feedback
+        with open(args.output, "w") as f:
+            json.dump(evaluated_recs, f, ensure_ascii=False, indent=2)
+        
+        print(f"✅ Feedback saved to {args.output}")
+
+    elif args.action == "update":
+        # Load Feedback
+        with open(args.input, "r") as f:
+            feedback_data = json.load(f)
+            
+        print(f"🔄 Updating persona '{args.persona}' based on feedback...")
+        update_persona_definition(args.persona, feedback_data)

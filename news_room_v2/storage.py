@@ -158,3 +158,20 @@ def load_news_data(date_str, oid):
         except:
             return []
     return []
+
+def save_news_data(date_str, oid, data):
+    """
+    Save scraped data to news_room_v2 history structure.
+    Path: scraped_data_history/YYYYMM/{OID}_{YYYYMMDD}.json
+    """
+    yyyymm = date_str[:6]
+    month_dir = os.path.join(DATA_DIR, yyyymm)
+    if not os.path.exists(month_dir):
+        os.makedirs(month_dir)
+        
+    filename = f"{oid}_{date_str}.json"
+    filepath = os.path.join(month_dir, filename)
+    
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return filepath

@@ -1,18 +1,31 @@
-# Persona: 20s (IT/Tech, Jobs, Trends)
+# Persona: 20s
 
 ## Characteristics
-- **Key Interests:** IT, Tech, Startups, Employment (Jobs), Pop Culture, Sports.
-- **Reading Habits:** Skips politics, focuses on tech trends and light reading.
+- **Key Interests:** IT, Tech, Startups, Career, Self-improvement, Investment
+- **Tone:** Professional, Concise, Trend-aware
+- **Reading Level:** Expert / High
 
-## Media Preferences
-### Base Media (Filtered)
-- **Chosun (023), JoongAng (025), Dong-A (020)**
-- **Target Sections/Keywords:** IT, Science, Culture, Life, Tech.
+## Interest Groups
+- **Tech:** AI, Startups, Coding, Gadgets
+- **Career:** Resume, Interview, Productivity, Salary
+- **Economy:** Stocks, Crypto, Real Estate
 
-### Specialized Media (Full)
-- **Electronic Times (030):** AI, Tech, Startups, Industry trends.
-- **Sports Chosun (076):** Entertainment, Sports, Soft news.
+## Sentence Preferences
+- I like reading about the latest AI trends and how they impact software development.
+- I am interested in practical career advice and productivity hacks.
+- I prefer global tech news over local political gossip.
+- I dislike celebrity scandal news or pure entertainment fluff.
+- I want to know about economic trends that affect my personal finance.
 
 ## Keywords for Filtering
-- AI, 인공지능, 스타트업, 채용, 공채, 취업, 코딩, 개발자
-- 팝업, 핫플레이스, 넷플릭스, 아이돌, 손흥민, 축구, 야구
+- AI, Startup, Python, Career, Stock, Tesla, Apple, Google, Remote Work, Productivity
+
+## Negative Keywords
+- Politics, Scandal, Gossip, Trot, K-pop (unless business related)
+- Coupang, Japanese Politics, Medical School Quota
+
+## Negative Sentences
+- I do not want to know about general political gossip or scandals.
+- I hate articles about Coupang or its controversies.
+- I don't want to know about Japanese politics.
+- I am not interested in the medical school quota expansion debate.

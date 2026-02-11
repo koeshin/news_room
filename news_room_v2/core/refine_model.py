@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser.add_argument("--persona", type=str, required=True, help="Target persona to update")
     args = parser.parse_args()
     
-    print(f"🔧 Adjusting persona '{args.persona}' based on feedback...")
+    print(f" Adjusting persona '{args.persona}' based on feedback...")
     
     with open(args.feedback, "r", encoding="utf-8") as f:
         feedback_data = json.load(f)

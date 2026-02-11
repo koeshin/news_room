@@ -23,10 +23,10 @@ echo "=== Daily Scraping Started at $(date) ===" >> "$LOG_FILE"
 
 # Update Vector DB with new data
 echo "=== Updating Vector DB ===" >> "$LOG_FILE"
-"$REPO_ROOT/venv_newsroom/bin/python3" "$PROJECT_ROOT/core/vector_store.py" >> "$LOG_FILE" 2>&1
+"$REPO_ROOT/venv_newsroom/bin/python3" "$PROJECT_ROOT/core/vector_store.py" --start_date "$TODAY" --end_date "$TODAY" >> "$LOG_FILE" 2>&1
 
 # Run Simulation to generate fresh recommendations
 echo "=== Generating Daily Recommendations ===" >> "$LOG_FILE"
-"$REPO_ROOT/venv_newsroom/bin/python3" "$PROJECT_ROOT/core/simulate.py" --json_output "$PROJECT_ROOT/data/loop_output.json" >> "$LOG_FILE" 2>&1
+"$REPO_ROOT/venv_newsroom/bin/python3" "$PROJECT_ROOT/core/recommendation.py" --json_output "$PROJECT_ROOT/data/recommands.json" >> "$LOG_FILE" 2>&1
 
 echo "=== Daily Scraping Completed at $(date) ===" >> "$LOG_FILE"

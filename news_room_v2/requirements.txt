@@ -17,10 +17,10 @@ certifi==2026.1.4
 cfgv==3.4.0
 chromadb==1.4.1
 cloudpickle==3.1.2
-clyent==1.2.2
+clyent
 cmdstanpy==1.2.2
 colorlog==6.10.1
-conda-repo-cli==1.0.75
+conda-repo-cli
 conda-verify==3.4.2
 constantly==15.1.0
 cssselect==1.1.0
@@ -170,3 +170,6 @@ websockets==16.0
 xgboost==3.1.3
 yfinance==1.0
 youtube-transcript-api==1.2.4
+keybert
+kiwipiepy
+gliner
