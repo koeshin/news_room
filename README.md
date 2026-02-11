@@ -28,7 +28,6 @@ The system operates in a **Scrape -> Tag -> Index -> Recommend -> Refine** pipel
 4.  **Recommendation Engine**: Generates the final personalized feed (`core/recommendation.py`).
 5.  **Persona Agent**: Evaluates feedback and updates the persona definition (`core/agent_persona.py`).
 
-> For a detailed deep dive, see [System Overview](project_docs/system_overview.md).
 
 ## Getting Started
 
