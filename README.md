@@ -2,7 +2,7 @@
 
 **News Room V2** is an advanced news recommendation system that delivers highly personalized content by combining vector-based semantic search with LLM-driven reranking. It is designed to understand nuanced user interests while strictly adhering to negative preferences.
 
-![Architecture](project_docs/images/architecture.png)
+![Architecture](news_room_v2/project_docs/images/architecture.png)
 
 ## Key Features
 
